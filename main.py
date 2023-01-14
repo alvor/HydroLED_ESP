@@ -12,11 +12,12 @@ H_OK = 'HTTP/1.1 200 OK\r\n'
 MAXTEMP=60
 ssid = 'MT-HSH'
 pswd = 'hoood171'
+sta = network.WLAN(network.STA_IF)
+
 hl_timezone = 7
 ow_pin=2
 ds18_delay=730
 
-sta = network.WLAN(network.STA_IF);
 
 lmps = [b'128a9bb4000000fc', b'1294e7b8000000ea']
 tmps = [b'28ff0c207620025a', b'28ff300676200286']
@@ -106,22 +107,22 @@ async def keep_connect():
 
 async def system_loop():
     while True:
-        ds18.convert_temp()
-        await asyncio.sleep_ms(ds18_delay)
-        max_tmp= 0
-        for i in tmps:
-            try:
-                tmp = ds18.read_temp(b2h.unhexlify(i))
-                max_tmp = max(max_tmp, tmp)
-            except:
-                print('CRC Error')
-            else:
-                print('Tmp ',i,' : ', tmp)
-            if max_tmp > MAXTEMP:
-                for j in lmps:
-                    ds24.turn((j), 1, 1)
-
-        print("Max temp : ",max_tmp)
+        # ds18.convert_temp()
+        # await asyncio.sleep_ms(ds18_delay)
+        # max_tmp= 0
+        # for i in tmps:
+        #     try:
+        #         tmp = ds18.read_temp(b2h.unhexlify(i))
+        #         max_tmp = max(max_tmp, tmp)
+        #     except:
+        #         print('CRC Error')
+        #     else:
+        #         print('Tmp ',i,' : ', tmp)
+        #     if max_tmp > MAXTEMP:
+        #         for j in lmps:
+        #             ds24.turn((j), 1, 1)
+        #
+        # print("Max temp : ",max_tmp)
         await asyncio.sleep(10)
 
 async def index(request):
@@ -219,27 +220,30 @@ async def control(request):
         './%s/footer.html' % _DIR, )
 
 async def api_ow(request):
-    Зачем суда?
-    print('>',request.url)
-    rom=request.url.split('=')[1][4:20]
-    await request.write(H_OK)
-    await send_file(
-        request,
-        './%s/header.html' % _DIR, )
-    await request.write('<h1> 1-Wire device </h1>')
-    await request.write('<h2>'+rom+' </h2>')
-    ow_class=''
-    if rom[0:2] == '12':
-        ow_class="Dual switch "
-        ow_add='turn on/off'
-    elif rom[0:2] == '28':
-        ow_class="temp meter ds18b20"
-        ow_add = '<span id="temp">{temp}</span>'
-    body = '<h3>' + ow_class + '</h3>'+'<script src="ow_temp.js"></script>'
-    await request.write(body+ow_add)
-    await send_file(
-        request,
-        './%s/footer.html' % _DIR, )
+    try:
+        rom=request.url.split('=')[1][4:20]
+        print(rom)
+    except:
+        print('Except >',request.url)
+    else:
+        await request.write(H_OK)
+        await send_file(
+            request,
+            './%s/header.html' % _DIR, )
+        await request.write('<h1> 1-Wire device </h1>')
+        await request.write('<h2>'+rom+' </h2>')
+        ow_class=''
+        if rom[0:2] == '12':
+            ow_class="Dual switch "
+            ow_add='turn on/off'
+        elif rom[0:2] == '28':
+            ow_class="temp meter ds18b20"
+            ow_add = '<span id="temp">{temp}</span>'
+        body = '<h3>' + ow_class + '</h3>'
+        await request.write(body+ow_add)
+        await send_file(
+            request,
+            './%s/footer.html' % _DIR, )
 
 async def ow18_temp(request):
     rom = request.url.split('=')[1][4:20]
