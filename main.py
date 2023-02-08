@@ -10,8 +10,10 @@ from nanoweb import Nanoweb, send_file
 
 H_OK = 'HTTP/1.1 200 OK\r\n'
 MAXTEMP=60
-ssid = 'MT-HSH'
-pswd = 'hoood171'
+ssid = json.loads(open('wifipsw.psw').read()).get('ssid')
+pswd = json.loads(open('wifipsw.psw').read()).get('pswd')
+# ssid = 'MT-HSH'
+# pswd = 'hoood171'
 sta = network.WLAN(network.STA_IF)
 
 hl_timezone = 7
@@ -107,29 +109,37 @@ async def keep_connect():
 
 async def system_loop():
     while True:
-        # ds18.convert_temp()
-        # await asyncio.sleep_ms(ds18_delay)
-        # max_tmp= 0
-        # for i in tmps:
-        #     try:
-        #         tmp = ds18.read_temp(b2h.unhexlify(i))
-        #         max_tmp = max(max_tmp, tmp)
-        #     except:
-        #         print('CRC Error')
-        #     else:
-        #         print('Tmp ',i,' : ', tmp)
-        #     if max_tmp > MAXTEMP:
-        #         for j in lmps:
-        #             ds24.turn((j), 1, 1)
-        #
-        # print("Max temp : ",max_tmp)
+        try:
+            ds18.convert_temp()
+            await asyncio.sleep_ms(ds18_delay)
+            max_tmp= 0
+            for i in tmps:
+                try:
+                    tmp = ds18.read_temp(b2h.unhexlify(i))
+                    max_tmp = max(max_tmp, tmp)
+                except:
+                    print('CRC Error')
+                else:
+                    print('Tmp ',i,' : ', tmp)
+                if max_tmp > MAXTEMP:
+                    for j in lmps:
+                        ds24.turn((j), 1, 1)
+
+            print("Max temp : ",max_tmp)
+        except:
+            print('DS18b20 Error')
         await asyncio.sleep(10)
 
 async def index(request):
     await request.write(H_OK+'\r\n')
+    await send_file(request,'./%s/header.html' % _DIR,)
+    await send_file(request,'./%s/footer.html' % _DIR,)
+
+async def status(request):
+    await request.write(H_OK+'\r\n')
     await send_file(
         request,
-        './%s/index.html' % _DIR,
+        './%s/status.html' % _DIR,
     )
 async def assets(request):
     await request.write(H_OK)
@@ -212,21 +222,22 @@ async def control(request):
     await asyncio.sleep_ms(ds18_delay)
     print(fROMS)
     for i in fROMS:
-        body = body + '<li>' + '<a href="/api/ow'+'?r='+str(b2h.hexlify(i)) +'">'+str(b2h.hexlify(i))+' </a>'+ '</li>'
+        body = body + '<li>' + '<a href="/onewire'+'?r='+str(b2h.hexlify(i)) +'">'+str(b2h.hexlify(i))+' </a>'+ '</li>'
     body = body + '<ul>'
     await request.write(body)
     await send_file(
         request,
         './%s/footer.html' % _DIR, )
 
-async def api_ow(request):
+async def ow18_one(request):
+    # await send_file(request, './%s/ow18.html' % _DIR,)
+    # return
     try:
         rom=request.url.split('=')[1][4:20]
         print(rom)
     except:
         print('Except >',request.url)
     else:
-        await request.write(H_OK)
         await send_file(
             request,
             './%s/header.html' % _DIR, )
@@ -238,14 +249,15 @@ async def api_ow(request):
             ow_add='turn on/off'
         elif rom[0:2] == '28':
             ow_class="temp meter ds18b20"
-            ow_add = '<span id="temp">{temp}</span>'
+            ow_add = '<span dat="28ff300676200286" id="temp">{temp}</span> <script src="ow_temp.js"></script>'
         body = '<h3>' + ow_class + '</h3>'
         await request.write(body+ow_add)
         await send_file(
             request,
             './%s/footer.html' % _DIR, )
 
-async def ow18_temp(request):
+async def ow18_api(request):
+    print(request.url)
     rom = request.url.split('=')[1][4:20]
     await request.write(H_OK)
     await request.write("Content-Type: application/json\r\n\r\n")
@@ -253,20 +265,22 @@ async def ow18_temp(request):
     await asyncio.sleep_ms(ds18_delay)
     temp = ds18.read_temp(bytearray(b2h.unhexlify(rom)))
     await request.write(json.dumps({"temp": temp}))
+    print('*********************')
 
 
 naw.routes = {
     '/': index,
+    '/status': status,
     '/assets/*': assets,
-    '/api/ow*': api_ow,
+    '/ow18*': ow18_one,
     '/api/status': api_status,
     '/api/upload/*': upload,
     '/api/ls': api_ls,
     '/api/download/*': api_download,
     '/test_req': test_req,
     '/files': files,
-    '/control':control,
-    '/ow18_temp':ow18_temp
+    '/control': control,
+    '/api/ow18_api*': ow18_api
 }
 
 
