@@ -12,8 +12,7 @@ H_OK = 'HTTP/1.1 200 OK\r\n'
 MAXTEMP=60
 ssid = json.loads(open('wifipsw.psw').read()).get('ssid')
 pswd = json.loads(open('wifipsw.psw').read()).get('pswd')
-# ssid = 'MT-HSH'
-# pswd = 'hoood171'
+
 sta = network.WLAN(network.STA_IF)
 
 hl_timezone = 7
