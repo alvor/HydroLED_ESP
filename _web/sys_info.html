@@ -3,19 +3,21 @@
     <head>
         <meta charset="utf-8">
         <script src="https://code.jquery.com/jquery-2.2.4.min.js" integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44=" crossorigin="anonymous"></script>
-        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
         <link rel="stylesheet" href="default.css">
     </head>
 
     <body>
-    <img class="fit-picture" src="/logo.png">
-         <h1>
-             <span id="date">{date}</span>
-             <span id="time">{time}</span>
-         </h1>
-         <ul>
+    <table width="100%">
+        <tr>
+            <td id="date">{date}</td>
+            <td><img src="/assets/logo.png" align="center" width=100></td>
+            <td id="time" align="right">{time}</td>
+        </tr>
+    </table>
+    <hr>
+        <ul>
             <li>Mem free: <span id="mem_free">{mem_free}</span></li>
-            <li>Uptime: <span id="uptime">{uptime}</span></li>
             <li>Uptime: <span id="uptime">{uptime}</span></li>
             <li>Python: <span id="python">{python}</span></li>
             <li>Platform: <span id="platform">{platform}</span></li>

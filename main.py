@@ -9,32 +9,35 @@ import sys
 from nanoweb import Nanoweb, send_file
 
 H_OK = 'HTTP/1.1 200 OK\r\n'
-MAXTEMP=60
+MAXTEMP = 60
 ssid = json.loads(open('wifipsw.psw').read()).get('ssid')
 pswd = json.loads(open('wifipsw.psw').read()).get('pswd')
 
 sta = network.WLAN(network.STA_IF)
 
 hl_timezone = 7
-ow_pin=2
-ds18_delay=730
-
+ow_pin = 2
+ds18_delay = 730
 
 lmps = [b'128a9bb4000000fc', b'1294e7b8000000ea']
-tmps = [b'28ff0c207620025a', b'28ff300676200286']
+# lmps=[b'121b79d6000000b4']
+tmps = [b'28ff0c207620025a']
+# tmps=[b'28ff7a16762002ea']
 
-ow=onewire.OneWire(machine.Pin(ow_pin))
+ow = onewire.OneWire(machine.Pin(ow_pin))
 ds18 = ds18x20.DS18X20(ow)
-ds24 = ds2406.DS2406(ow,lmps)
+ds24 = ds2406.DS2406(ow, lmps)
 naw = Nanoweb()
-naw.assets_extensions += ('ico','png',)
-_DIR='./_web/'
+naw.assets_extensions += ('ico', 'png',)
+_DIR = './_web/'
 naw.STATIC_DIR = _DIR
+
 
 def get_ow():
     ow = onewire.OneWire(machine.Pin(ow_pin))
     roms = ow.scan()
     return roms
+
 
 def get_time():
     _date = time.localtime()[0:4]
@@ -50,6 +53,7 @@ def get_time():
         '{:02d}h {:02d}:{:02d}'.format(uptime_h, uptime_m, uptime_s),
     )
 
+
 async def api_ls(request):
     gc.collect()
     await request.write(H_OK)
@@ -57,6 +61,7 @@ async def api_ls(request):
     await request.write('{"files": [%s]}' % ', '.join(
         '"' + f + '"' for f in sorted(uos.listdir('.'))
     ))
+
 
 async def api_status(request):
     """API status endpoint"""
@@ -80,7 +85,6 @@ async def api_status(request):
     }))
 
 
-
 async def keep_connect():
     while True:
         if sta.active():
@@ -97,7 +101,7 @@ async def keep_connect():
                     ntptime.NTP_DELTA = ntptime.NTP_DELTA - hl_timezone * 3600
                     ntptime.settime()
                 except:
-                    print('Не удалось получить время')
+                    print('Time set errors')
                 else:
                     print('Time : ', time.localtime())
         else:
@@ -107,39 +111,48 @@ async def keep_connect():
 
 
 async def system_loop():
+    crcErLv = 0
     while True:
         try:
             ds18.convert_temp()
             await asyncio.sleep_ms(ds18_delay)
-            max_tmp= 0
+            max_tmp = 0
             for i in tmps:
                 try:
                     tmp = ds18.read_temp(b2h.unhexlify(i))
                     max_tmp = max(max_tmp, tmp)
                 except:
-                    print('CRC Error')
-                else:
-                    print('Tmp ',i,' : ', tmp)
-                if max_tmp > MAXTEMP:
+                    crcErLv += 1
+                    print('CRC Error. Now {} errors (+1)'.format(crcErLv))
+                    if crcErLv > 15: crcErLv = 15
+                else:  # All ok
+                    print('Tmp ', i, ' : ', tmp)
+                    crcErLv -= 2
+                    if crcErLv < 0: crcErLv = 0
+                if (max_tmp > MAXTEMP) or (crcErLv > 5):
                     for j in lmps:
                         ds24.turn((j), 1, 1)
-
-            print("Max temp : ",max_tmp)
+                        print('Lmp {} off'.format(j))
+            print("Max temp : ", max_tmp)
         except:
             print('DS18b20 Error')
-        await asyncio.sleep(10)
+        await asyncio.sleep(5)
+
 
 async def index(request):
-    await request.write(H_OK+'\r\n')
-    await send_file(request,'./%s/header.html' % _DIR,)
-    await send_file(request,'./%s/footer.html' % _DIR,)
+    await request.write(H_OK + '\r\n')
+    await send_file(request, './%s/header.html' % _DIR, )
+    await send_file(request, './%s/index.html' % _DIR, )
+    await send_file(request, './%s/footer.html' % _DIR, )
 
-async def status(request):
-    await request.write(H_OK+'\r\n')
+
+async def sys_info(request):
+    await request.write(H_OK + '\r\n')
     await send_file(
         request,
-        './%s/status.html' % _DIR,
+        './%s/sys_info.html' % _DIR,
     )
+
 async def assets(request):
     await request.write(H_OK)
     args = {}
@@ -153,19 +166,24 @@ async def assets(request):
         **args,
     )
 
+
 async def test_req(request):
     await request.write(H_OK + '\r\n')
     await send_file(
         request,
         './%s/test_req.html' % _DIR,
     )
+
+
 async def files(request):
-    await request.write(H_OK+'\r\n')
+    await request.write(H_OK + '\r\n')
 
     await send_file(
         request,
         './%s/files.html' % _DIR,
     )
+
+
 async def api_download(request):
     await request.write(H_OK)
 
@@ -173,6 +191,7 @@ async def api_download(request):
     await request.write("Content-Type: application/octet-stream\r\n")
     await request.write("Content-Disposition: attachment; filename=%s\r\n\r\n" % filename)
     await send_file(request, filename)
+
 
 async def upload(request):
     if request.method != "PUT":
@@ -221,39 +240,42 @@ async def control(request):
     await asyncio.sleep_ms(ds18_delay)
     print(fROMS)
     for i in fROMS:
-        body = body + '<li>' + '<a href="/onewire'+'?r='+str(b2h.hexlify(i)) +'">'+str(b2h.hexlify(i))+' </a>'+ '</li>'
+        body = body + '<li>' + '<a href="/onewire' + '?r=' + str(b2h.hexlify(i)) + '">' + str(
+            b2h.hexlify(i)) + ' </a>' + '</li>'
     body = body + '<ul>'
     await request.write(body)
     await send_file(
         request,
         './%s/footer.html' % _DIR, )
 
+
 async def ow18_one(request):
     # await send_file(request, './%s/ow18.html' % _DIR,)
     # return
     try:
-        rom=request.url.split('=')[1][4:20]
+        rom = request.url.split('=')[1][4:20]
         print(rom)
     except:
-        print('Except >',request.url)
+        print('Except >', request.url)
     else:
         await send_file(
             request,
             './%s/header.html' % _DIR, )
         await request.write('<h1> 1-Wire device </h1>')
-        await request.write('<h2>'+rom+' </h2>')
-        ow_class=''
+        await request.write('<h2>' + rom + ' </h2>')
+        ow_class = ''
         if rom[0:2] == '12':
-            ow_class="Dual switch "
-            ow_add='turn on/off'
+            ow_class = "Dual switch "
+            ow_add = 'turn on/off'
         elif rom[0:2] == '28':
-            ow_class="temp meter ds18b20"
+            ow_class = "temp meter ds18b20"
             ow_add = '<span dat="28ff300676200286" id="temp">{temp}</span> <script src="ow_temp.js"></script>'
         body = '<h3>' + ow_class + '</h3>'
-        await request.write(body+ow_add)
+        await request.write(body + ow_add)
         await send_file(
             request,
             './%s/footer.html' % _DIR, )
+
 
 async def ow18_api(request):
     print(request.url)
@@ -269,7 +291,7 @@ async def ow18_api(request):
 
 naw.routes = {
     '/': index,
-    '/status': status,
+    '/sys_info': sys_info,
     '/assets/*': assets,
     '/ow18*': ow18_one,
     '/api/status': api_status,
@@ -281,7 +303,6 @@ naw.routes = {
     '/control': control,
     '/api/ow18_api*': ow18_api
 }
-
 
 loop = asyncio.get_event_loop()
 loop.create_task(keep_connect())
