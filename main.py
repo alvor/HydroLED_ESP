@@ -19,10 +19,13 @@ hl_timezone = 7
 ow_pin = 2
 ds18_delay = 730
 
-lmps = [b'128a9bb4000000fc', b'1294e7b8000000ea']
-# lmps=[b'121b79d6000000b4']
-tmps = [b'28ff0c207620025a']
-# tmps=[b'28ff7a16762002ea']
+Ch1Time=((8,00),(20,00))
+Ch2Time=((8,15),(19,45))
+
+#lmps = [b'128a9bb4000000fc', b'1294e7b8000000ea']
+lmps=[b'121b79d6000000b4']
+#tmps = [b'28ff0c207620025a']
+tmps=[b'28ff7a16762002ea']
 
 ow = onewire.OneWire(machine.Pin(ow_pin))
 ds18 = ds18x20.DS18X20(ow)
@@ -125,7 +128,7 @@ async def system_loop():
                     crcErLv += 1
                     print('CRC Error. Now {} errors (+1)'.format(crcErLv))
                     if crcErLv > 15: crcErLv = 15
-                else:  # All ok
+                else:
                     print('Tmp ', i, ' : ', tmp)
                     crcErLv -= 2
                     if crcErLv < 0: crcErLv = 0
@@ -133,25 +136,31 @@ async def system_loop():
                     for j in lmps:
                         ds24.turn((j), 1, 1)
                         print('Lmp {} off'.format(j))
+                else:
+                    print('All ok. Tmp ', i, ' : ', tmp)
+                    print('Mem free:',gc.mem_free())
+                    await schedule()
             print("Max temp : ", max_tmp)
         except:
             print('DS18b20 Error')
+        gc.collect()
         await asyncio.sleep(5)
 
+async def schedule():
+    lt=time.localtime()[3:5]
+    Ch1 = Ch1Time[0] < lt < Ch1Time[1]
+    Ch2 = Ch2Time[0] < lt < Ch2Time[1]
+    ds24.turn(lmps[0], int(Ch1), int(Ch2))
 
 async def index(request):
     await request.write(H_OK + '\r\n')
-    await send_file(request, './%s/header.html' % _DIR, )
-    await send_file(request, './%s/index.html' % _DIR, )
-    await send_file(request, './%s/footer.html' % _DIR, )
-
+    for i in ['header','index','footer']:
+        await send_file(request, './%s.html' % (_DIR+i), )
 
 async def sys_info(request):
     await request.write(H_OK + '\r\n')
-    await send_file(
-        request,
-        './%s/sys_info.html' % _DIR,
-    )
+    for i in ['header','sys_info','footer']:
+        await send_file(request, './%s.html' % (_DIR+i), )
 
 async def assets(request):
     await request.write(H_OK)
@@ -177,11 +186,8 @@ async def test_req(request):
 
 async def files(request):
     await request.write(H_OK + '\r\n')
-
-    await send_file(
-        request,
-        './%s/files.html' % _DIR,
-    )
+    for i in ['header','files','footer']:
+        await send_file(request, './%s.html' % (_DIR+i), )
 
 
 async def api_download(request):
