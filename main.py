@@ -126,7 +126,7 @@ async def system_loop():
                     max_tmp = max(max_tmp, tmp)
                 except:
                     crcErLv += 1
-                    print('CRC Error. Now {} errors (+1)'.format(crcErLv))
+                    print('CRC Er', crcErLv)
                     if crcErLv > 15: crcErLv = 15
                 else:
                     print('Tmp ', i, ' : ', tmp)
@@ -139,14 +139,14 @@ async def system_loop():
                 else:
                     print('All ok. Tmp ', i, ' : ', tmp)
                     print('Mem free:',gc.mem_free())
-                    await schedule()
+                    schedule()
             print("Max temp : ", max_tmp)
         except:
             print('DS18b20 Error')
         gc.collect()
         await asyncio.sleep(5)
 
-async def schedule():
+def schedule():
     lt=time.localtime()[3:5]
     Ch1 = Ch1Time[0] < lt < Ch1Time[1]
     Ch2 = Ch2Time[0] < lt < Ch2Time[1]
