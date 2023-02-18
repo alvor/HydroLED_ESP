@@ -6,13 +6,22 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css">
         <link rel="stylesheet" href="default.css">
+        <style>
+           table {
+            table-layout: fixed; /* Фиксированная ширина ячеек */
+            width: 100%; /* Ширина таблицы */
+           }
+           .col1 { width: 20%; }
+           .col2 { width: 60%; }
+           .col3 { width: 20%; }
+        </style>
     </head>
 
     <body>
     <table width="100%">
         <tr>
             <td id="date">{date}</td>
-            <td><img src="/assets/logo.png" align="center" width=180></td>
+            <td><img src="/assets/logo.png" align="center" width=150></td>
             <td id="time" align="right">{time}</td>
         </tr>
     </table>

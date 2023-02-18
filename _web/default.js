@@ -9,12 +9,21 @@ function update_files() {
 
 function update_status() {
     $.getJSON("/api/status", function(data) {
-        $.each(['date','time', 'mem_free', 'uptime', 'python', 'platform'], function(index, key) {
+        $.each(['date','time', 'mem_free','currdir'], function(index, key) {
             $('#' + key).html(data[key]);
         });
     });
 }
 
+function change_dir() {
+    var file = $(document).find('select').val()[0];
+    $('#list select option').remove();
+    $.getJSON("/api/ls?chdir="+file, function(data) {
+        $.each(data['files'], function(index, file) {
+                $('<option />', {html: file}).appendTo($('#list select'));
+        });
+    });
+}
 
 $(document).ready(function() {
     $(document).on('submit', '#upload', function(e) {

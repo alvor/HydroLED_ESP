@@ -1,16 +1,18 @@
-        <h2>1. File list</h2>
+        <h3>1. File list</h3>
 
         <p class="alert alert-info" role="alert">
             List is updated when you upload a file.
         </p>
 
         <form id="list">
-            <select multiple></select>
+            <p>Dir: <span id="currdir">{currdir}</span></p>
+            <select multiple size="10"></select>
             <br>
-            <input class="btn btn-primary mt-2" type="submit" name="download" value="Download">
+            <input type="submit" name="bt_dw" value="Download">
+            <input type="button" name="bt_cd" value="ChDir" onclick="change_dir();">
         </form>
 
-        <h2>2. Upload</h2>
+        <h3>2. Upload</h3>
 
         <p class="alert alert-info" role="alert">
             Select one or more files and upload them.

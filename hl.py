@@ -1,3 +1,4 @@
+#hl connect
 class hlc:
     def on:
         pass

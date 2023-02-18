@@ -1,12 +1,3 @@
-import ubinascii as b2h
-
-
-def h2b(str):
-    return bytearray(b2h.unhexlify(str))
-
-
-
-++++++++++++++++++++++++++++++++++++++++++++++++6
 class DS2406:
     st_tab = {}
 
@@ -21,7 +12,6 @@ class DS2406:
         self.ow.select_rom(Rom)
         _sb = PinA * 64 + PinB * 32
         self.ow.write([85, 7, 0, _sb])
- #       print('send - >',PinA*64+PinB*32)
         for _n in range(1, 6):
             self.ow.readbyte()
 
