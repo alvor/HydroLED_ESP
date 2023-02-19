@@ -17,7 +17,7 @@ pswd = json.loads(open('wifipsw.psw').read()).get('pswd')
 sta = network.WLAN(network.STA_IF)
 
 hl_timezone = 7
-ow_pin = 3
+ow_pin = 2
 ds18_delay = 730
 
 Ch1Time=((8,00),(20,00))
