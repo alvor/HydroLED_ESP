@@ -268,7 +268,6 @@ async def ow_one(rq):
 
 
 async def ow18_api(rq):
-    print(rq.url)
     rom = rq.url.split('=')[1][4:20]
     await rq.write(H_OK)
     await rq.write("Content-Type: application/json\r\n\r\n")
@@ -276,8 +275,9 @@ async def ow18_api(rq):
     await asyncio.sleep_ms(ds18_delay)
     temp = ds18.read_temp(bytearray(h2b(rom)))
     await rq.write(json.dumps({"temp": temp}))
-    print('*********************')
 
+async def reset(rq):
+    machine.reset()
 
 naw.routes = {
     '/': index,
@@ -286,6 +286,7 @@ naw.routes = {
     '/ow*': ow_one,
     '/api/status': api_status,
     '/api/upload/*': upload,
+    '/api/reset': reset,
     '/api/ls*': api_ls,
     '/api/download/*': api_download,
     '/files': files,
