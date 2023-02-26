@@ -1,7 +1,9 @@
 #hl connect
-class hlc:
-    def on:
+class hl:
+    def __init__(self,name):
+        self.name=name
+    def on(self):
         pass
-    def off:
+    def off(self):
         pass
 

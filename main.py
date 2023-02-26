@@ -9,6 +9,7 @@ import time
 import sys
 from nanoweb import Nanoweb, send_file
 
+devs = []
 H_OK = 'HTTP/1.1 200 OK\r\n'
 MAXTEMP = 60
 ssid = json.loads(open('wifipsw.psw').read()).get('ssid')
@@ -23,9 +24,10 @@ ds18_delay = 730
 Ch1Time=((8,00),(20,00))
 Ch2Time=((8,15),(19,45))
 
-#lmps = [b'128a9bb4000000fc', b'1294e7b8000000ea']
-lmps=[b'121b79d6000000b4']
-tmps = [b'28ff0c207620025a']
+lmps = [b'128a9bb4000000fc']
+tmps = [b'28ff300676200286']
+#lmps=[b'121b79d6000000b4']
+#tmps = [b'28ff0c207620025a']
 #tmps=[b'28ff7a16762002ea']
 
 ow = onewire.OneWire(machine.Pin(ow_pin))
@@ -35,23 +37,24 @@ naw = Nanoweb()
 naw.assets_extensions += ('ico', 'png',)
 _DIR = '/_web/'
 naw.STATIC_DIR = _DIR
+gc.threshold(2000)
+
+def urldecode(str):
+    dic = {"%21": "!", "%22": '"', "%23": "#", "%24": "$", "%26": "&", "%27": "'", "%28": "(", "%29": ")", "%2A": "*",
+           "%2B": "+", "%2C": ",", "%2F": "/", "%3A": ":", "%3B": ";", "%3D": "=", "%3F": "?", "%40": "@", "%5B": "[",
+           "%5D": "]", "%7B": "{", "%7D": "}", "%20": " "}
+    for k, v in dic.items(): str = str.replace(k, v)
+    return str
 
 def get_time():
     _date = time.localtime()[0:4]
     _time = time.localtime()[3:6]
-    uptime_s = int(time.ticks_ms() / 1000)
-    uptime_h = int(uptime_s / 3600)
-    uptime_m = int(uptime_s / 60)
-    uptime_m = uptime_m % 60
-    uptime_s = uptime_s % 60
     return (
         '{}-{:02d}-{:02d}'.format(*_date),
         '{:02d}:{:02d}:{:02d}'.format(*_time),
-        '{:02d}h {:02d}:{:02d}'.format(uptime_h, uptime_m, uptime_s),
     )
 
 async def api_ls(rq):
-    gc.collect()
     try:
         uos.chdir(rq.url.split('?chdir=')[1])
     except:
@@ -76,7 +79,7 @@ async def api_status(rq):
     await rq.write(H_OK)
     await rq.write("Content-Type: application/json\r\n\r\n")
     mem_free = gc.mem_free()
-    date_str, time_str, uptime_str = get_time()
+    date_str, time_str = get_time()
     await rq.write(json.dumps({
         "date": date_str,
         "time": time_str,
@@ -84,10 +87,28 @@ async def api_status(rq):
         "currdir": uos.getcwd()
     }))
 
-async def api_temps(rq):
+async def api_lmp(rq):
     await rq.write(H_OK)
     await rq.write("Content-Type: application/json\r\n\r\n")
+    mem_free = gc.mem_free()
+    date_str, time_str = get_time()
+    await rq.write(json.dumps({
+        "date": date_str,
+        "time": time_str,
+        "mem_free": mem_free,
+        "currdir": uos.getcwd()
+    }))
 
+async def api_eval(rq):
+    await rq.write(H_OK)
+    await rq.write("Content-Type: application/json\r\n\r\n")
+    ev=rq.url.split('ev=')[1]
+    print(ev)
+    ev=urldecode(ev)
+    print(ev)
+    ev=eval(ev)
+    await rq.write(json.dumps(ev))
+    gc.collect()
 
 async def keep_connect():
     while True:
@@ -102,8 +123,10 @@ async def keep_connect():
             else:
                 print(sta.ifconfig())
                 try:
+                    #TODO From where time?
                     ntptime.NTP_DELTA = ntptime.NTP_DELTA - hl_timezone * 3600
                     ntptime.settime()
+                    print('Time set ok')
                 except:
                     print('Time set errors')
                 else:
@@ -159,10 +182,11 @@ async def index(rq):
         print('/%s.html' % (_DIR+i))
         await send_file(rq, '/%s.html' % (_DIR+i), )
 
-async def sys_info(rq):
+async def lmp(rq):
     await rq.write(H_OK + '\r\n')
-    for i in ['header','sys_info','footer']:
-        await send_file(rq, '/%s.html' % (_DIR+i), )
+    for i in ['header', 'lmp', 'footer']:
+        print('/%s.html' % (_DIR + i))
+        await send_file(rq, '/%s.html' % (_DIR + i), )
 
 
 async def assets(rq):
@@ -267,6 +291,8 @@ async def ow_one(rq):
         await send_file(rq,'/%s/footer.html' % _DIR, )
 
 
+
+
 async def ow18_api(rq):
     rom = rq.url.split('=')[1][4:20]
     await rq.write(H_OK)
@@ -276,22 +302,20 @@ async def ow18_api(rq):
     temp = ds18.read_temp(bytearray(h2b(rom)))
     await rq.write(json.dumps({"temp": temp}))
 
-async def reset(rq):
-    machine.reset()
-
 naw.routes = {
     '/': index,
-    '/sys_info': sys_info,
+    '/lamp':lmp,
     '/assets/*': assets,
     '/ow*': ow_one,
     '/api/status': api_status,
     '/api/upload/*': upload,
-    '/api/reset': reset,
     '/api/ls*': api_ls,
+    '/api/eval*': api_eval,
     '/api/download/*': api_download,
+    '/api/ow18_api*': ow18_api,
+    '/api/lmp': api_lmp,
     '/files': files,
-    '/owscan': owscan,
-    '/api/ow18_api*': ow18_api
+    '/owscan': owscan
 }
 
 loop = asyncio.get_event_loop()

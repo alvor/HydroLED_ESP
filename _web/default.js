@@ -8,6 +8,7 @@ function update_files() {
 }
 
 function update_status() {
+    var snd =
     $.getJSON("/api/status", function(data) {
         $.each(['date','time', 'mem_free','currdir'], function(index, key) {
             $('#' + key).html(data[key]);

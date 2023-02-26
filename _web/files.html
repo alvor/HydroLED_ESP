@@ -21,5 +21,5 @@
             <label for="files">Files to upload:</label>
             <input id="files" name="files" type="file" multiple>
             <input type="submit" value="Upload">
-            <input type="button" name="reset" value="Reset" onclick='$.getJSON("/api/reset")'>
+            <input type="button" name="reset" value="Reset" onclick='$.getJSON("/api/eval&ev=machine.reset()")'>
         </form>
