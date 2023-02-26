@@ -1,5 +1,5 @@
 import gc
-import machine, ds2406, onewire, ds18x20
+import machine, ds2406, onewire, ds18x20, hl
 import network, ntptime
 import uasyncio as asyncio
 from ubinascii import hexlify as b2h
@@ -33,7 +33,6 @@ tmps = [b'28ff300676200286']
 
 ow = onewire.OneWire(machine.Pin(ow_pin))
 ds18 = ds18x20.DS18X20(ow)
-ds24 = ds2406.DS2406(ow, lmps)
 naw = Nanoweb()
 naw.assets_extensions += ('ico', 'png',)
 _DIR = '/_web/'
@@ -91,12 +90,9 @@ async def api_status(rq):
 async def api_lmp(rq):
     await rq.write(H_OK)
     await rq.write("Content-Type: application/json\r\n\r\n")
-    mem_free = gc.mem_free()
-    date_str, time_str = get_time()
     await rq.write(json.dumps({
         "ch1_time": Ch1Time,
         "ch2_time": Ch2Time,
-        "temp":maxtemp
     }))
 
 async def api_eval(rq):
