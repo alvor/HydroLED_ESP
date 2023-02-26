@@ -1,6 +1,6 @@
 <h1>Светильник</h1>
 <h2>Контур 1</h2>
-<h3>Время работы с <em>{c1_on}</em> по <em>{c1_off}</em></h3>
+<h3>Время работы <em id="ch1_time">{ch1_time}</em></h3>
 <h2>Контур 2</h2>
 <h3>Время работы с <em>{c2_on}</em> по <em>{c2_off}</em></h3>
 <br>
@@ -10,3 +10,14 @@
 <p>Это пилотная версия пришивки. Если что-то работает это удивительно. Любое использование на свой риск и страх.</p>
 <br>
 
+<script>
+function update_lmp() {
+    $.getJSON("/api/lmp", function(data) {
+        $.each(['ch1_time', 'c2_on','c2_off','temp'], function(index, key) {
+            $('#' + key).html(data[key]);
+        });
+    });
+}
+
+update_lmp();
+</script>

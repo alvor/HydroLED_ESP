@@ -12,6 +12,7 @@ from nanoweb import Nanoweb, send_file
 devs = []
 H_OK = 'HTTP/1.1 200 OK\r\n'
 MAXTEMP = 60
+maxtemp = 0
 ssid = json.loads(open('wifipsw.psw').read()).get('ssid')
 pswd = json.loads(open('wifipsw.psw').read()).get('pswd')
 
@@ -93,10 +94,9 @@ async def api_lmp(rq):
     mem_free = gc.mem_free()
     date_str, time_str = get_time()
     await rq.write(json.dumps({
-        "date": date_str,
-        "time": time_str,
-        "mem_free": mem_free,
-        "currdir": uos.getcwd()
+        "ch1_time": Ch1Time,
+        "ch2_time": Ch2Time,
+        "temp":maxtemp
     }))
 
 async def api_eval(rq):
