@@ -18,7 +18,7 @@ class DS2406:
     def set(self, Rom, Ch, Value):
         try:
             self.st_tab[Rom][Ch] = Value
-            self.turn(h2b(Rom), self.st_tab[Rom][0], self.st_tab[Rom][1])
+            self.turn(Rom, self.st_tab[Rom][0], self.st_tab[Rom][1])
         except:
             print('Not found rom:', Rom)
 

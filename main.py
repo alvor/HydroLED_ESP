@@ -15,7 +15,7 @@ ssid = json.loads(open('wifipsw.psw').read()).get('ssid')
 pswd = json.loads(open('wifipsw.psw').read()).get('pswd')
 
 sta = network.WLAN(network.STA_IF)
-
+sta.active(True)
 hl_timezone = 7
 ow_pin = 2
 ds18_delay = 730
@@ -23,10 +23,8 @@ ds18_delay = 730
 Ch1Time=((8,00),(20,00))
 Ch2Time=((8,15),(19,45))
 
-#lmps = [b'128a9bb4000000fc', b'1294e7b8000000ea']
-lmps=[b'121b79d6000000b4']
-tmps = [b'28ff0c207620025a']
-#tmps=[b'28ff7a16762002ea']
+lmps = [b'128a9bb4000000fc']
+tmps = [b'28ff300676200286']
 
 ow = onewire.OneWire(machine.Pin(ow_pin))
 ds18 = ds18x20.DS18X20(ow)
@@ -99,6 +97,7 @@ async def keep_connect():
                     print('Can not connected')
                 else:
                     print("Connected")
+                    print(sta.ifconfig())
             else:
                 print(sta.ifconfig())
                 try:
@@ -238,7 +237,7 @@ async def owscan(rq):
     await asyncio.sleep_ms(ds18_delay)
     print(fROMS)
     for i in fROMS:
-        body = body + '<li>' + '<a id="'+str(b2h(i))+'" href="/ow' + '?r=' + str(b2h(i)) + '">' + str(b2h(i)) + ' </a>' + '</li>'
+        body = body + '<li>' + '<a id="'+str(b2h(i,':'))+'" href="/ow' + '?r=' + str(b2h(i,':')) + '">' + str(b2h(i,':')) + ' </a>' + '</li>'
     body = body + '<ul>'
     await rq.write(body)
     await send_file(rq,'/%s/footer.html' % _DIR, )
