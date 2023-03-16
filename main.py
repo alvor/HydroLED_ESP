@@ -1,5 +1,5 @@
 import gc
-import machine, ds2406, onewire, ds18x20
+import machine, ds2406, onewire, ds18x20, hl
 import network, ntptime
 import uasyncio as asyncio
 from ubinascii import hexlify as b2h
@@ -25,27 +25,18 @@ ds18_delay = 730
 Ch1Time=((8,00),(20,00))
 Ch2Time=((8,15),(19,45))
 
-lmps = [b'128a9bb4000000fc']
-tmps = [b'28ff300676200286']
-#lmps=[b'121b79d6000000b4']
-#tmps = [b'28ff0c207620025a']
-#tmps=[b'28ff7a16762002ea']
-
 ow = onewire.OneWire(machine.Pin(ow_pin))
 ds18 = ds18x20.DS18X20(ow)
-ds24 = ds2406.DS2406(ow, lmps)
+
+_ds24 = hl._ow_2406('sv1',ow,b'128a9bb4000000fc')
+_ds18 = hl._ow_18x20('tmp',ow,b'28ff300676200286')
+_lmps = [hl_2406_ch("Lamp 1",_ds24,0),hl_2406_ch("Lamp 2",_ds24,0)]
+
 naw = Nanoweb()
 naw.assets_extensions += ('ico', 'png',)
 _DIR = '/_web/'
 naw.STATIC_DIR = _DIR
 gc.threshold(2000)
-
-def urldecode(str):
-    dic = {"%21": "!", "%22": '"', "%23": "#", "%24": "$", "%26": "&", "%27": "'", "%28": "(", "%29": ")", "%2A": "*",
-           "%2B": "+", "%2C": ",", "%2F": "/", "%3A": ":", "%3B": ";", "%3D": "=", "%3F": "?", "%40": "@", "%5B": "[",
-           "%5D": "]", "%7B": "{", "%7D": "}", "%20": " "}
-    for k, v in dic.items(): str = str.replace(k, v)
-    return str
 
 def get_time():
     _date = time.localtime()[0:4]
@@ -91,20 +82,15 @@ async def api_status(rq):
 async def api_lmp(rq):
     await rq.write(H_OK)
     await rq.write("Content-Type: application/json\r\n\r\n")
-    mem_free = gc.mem_free()
-    date_str, time_str = get_time()
     await rq.write(json.dumps({
         "ch1_time": Ch1Time,
         "ch2_time": Ch2Time,
-        "temp":maxtemp
     }))
 
 async def api_eval(rq):
     await rq.write(H_OK)
     await rq.write("Content-Type: application/json\r\n\r\n")
     ev=rq.url.split('ev=')[1]
-    print(ev)
-    ev=urldecode(ev)
     print(ev)
     ev=eval(ev)
     await rq.write(json.dumps(ev))
@@ -174,7 +160,7 @@ def schedule():
     lt=time.localtime()[3:5]
     Ch1 = Ch1Time[0] < lt < Ch1Time[1]
     Ch2 = Ch2Time[0] < lt < Ch2Time[1]
-    ds24.turn(lmps[0], int(Ch1), int(Ch2))
+    ds2406.turn(lmps[0], int(Ch1), int(Ch2))
 
 async def index(rq):
     await rq.write(H_OK + '\r\n')
@@ -252,70 +238,17 @@ async def upload(rq):
 
     await api_send_response(rq, 201, "Created")
 
-
-async def owscan(rq):
-    await rq.write(H_OK+'\r\n')
-    await send_file(rq,'/%s/header.html' % _DIR, )
-    await rq.write('<h1>OW scan</h1>')
-    body = '<ul>'
-    fROMS = onewire.OneWire(machine.Pin(ow_pin)).scan()
-    await asyncio.sleep_ms(ds18_delay)
-    print(fROMS)
-    for i in fROMS:
-        body = body + '<li>' + '<a id="'+str(b2h(i))+'" href="/ow' + '?r=' + str(b2h(i)) + '">' + str(b2h(i)) + ' </a>' + '</li>'
-    body = body + '<ul>'
-    await rq.write(body)
-    await send_file(rq,'/%s/footer.html' % _DIR, )
-
-
-async def ow_one(rq):
-
-    try:
-        rom = rq.url.split('=')[1][4:20]
-        print(rom)
-    except:
-        print('Except >', rq.url)
-    else:
-        await send_file(rq,'/%s/header.html' % _DIR, )
-        await rq.write('<h1> 1-Wire device </h1>')
-        await rq.write('<h2>' + rom + ' </h2>')
-        ow_class = ''
-        if rom[0:2] == '12':
-            ow_class = "Dual switch "
-            ow_add = 'turn on/off'
-        elif rom[0:2] == '28':
-            ow_class = "temp meter ds18b20"
-            ow_add = '<span dat="28ff300676200286" id="temp">{temp}</span> <script src="ow_temp.js"></script>'
-        body = '<h3>' + ow_class + '</h3>'
-        await rq.write(body + ow_add)
-        await send_file(rq,'/%s/footer.html' % _DIR, )
-
-
-
-
-async def ow18_api(rq):
-    rom = rq.url.split('=')[1][4:20]
-    await rq.write(H_OK)
-    await rq.write("Content-Type: application/json\r\n\r\n")
-    ds18.convert_temp()
-    await asyncio.sleep_ms(ds18_delay)
-    temp = ds18.read_temp(bytearray(h2b(rom)))
-    await rq.write(json.dumps({"temp": temp}))
-
 naw.routes = {
     '/': index,
     '/lamp':lmp,
     '/assets/*': assets,
-    '/ow*': ow_one,
     '/api/status': api_status,
     '/api/upload/*': upload,
     '/api/ls*': api_ls,
     '/api/eval*': api_eval,
     '/api/download/*': api_download,
-    '/api/ow18_api*': ow18_api,
     '/api/lmp': api_lmp,
     '/files': files,
-    '/owscan': owscan
 }
 
 loop = asyncio.get_event_loop()
