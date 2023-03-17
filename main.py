@@ -8,16 +8,15 @@ import json
 import time
 import sys
 from nanoweb import Nanoweb, send_file
+from hx711 import HX711
 
-devs = []
 H_OK = 'HTTP/1.1 200 OK\r\n'
 MAXTEMP = 60
-maxtemp = 0
 ssid = json.loads(open('wifipsw.psw').read()).get('ssid')
 pswd = json.loads(open('wifipsw.psw').read()).get('pswd')
 
 sta = network.WLAN(network.STA_IF)
-
+sta.active(True)
 hl_timezone = 7
 ow_pin = 2
 ds18_delay = 730
@@ -27,9 +26,6 @@ Ch2Time=((8,15),(19,45))
 
 lmps = [b'128a9bb4000000fc']
 tmps = [b'28ff300676200286']
-#lmps=[b'121b79d6000000b4']
-#tmps = [b'28ff0c207620025a']
-#tmps=[b'28ff7a16762002ea']
 
 ow = onewire.OneWire(machine.Pin(ow_pin))
 ds18 = ds18x20.DS18X20(ow)
@@ -38,24 +34,23 @@ naw = Nanoweb()
 naw.assets_extensions += ('ico', 'png',)
 _DIR = '/_web/'
 naw.STATIC_DIR = _DIR
-gc.threshold(2000)
-
-def urldecode(str):
-    dic = {"%21": "!", "%22": '"', "%23": "#", "%24": "$", "%26": "&", "%27": "'", "%28": "(", "%29": ")", "%2A": "*",
-           "%2B": "+", "%2C": ",", "%2F": "/", "%3A": ":", "%3B": ";", "%3D": "=", "%3F": "?", "%40": "@", "%5B": "[",
-           "%5D": "]", "%7B": "{", "%7D": "}", "%20": " "}
-    for k, v in dic.items(): str = str.replace(k, v)
-    return str
 
 def get_time():
     _date = time.localtime()[0:4]
     _time = time.localtime()[3:6]
+    uptime_s = int(time.ticks_ms() / 1000)
+    uptime_h = int(uptime_s / 3600)
+    uptime_m = int(uptime_s / 60)
+    uptime_m = uptime_m % 60
+    uptime_s = uptime_s % 60
     return (
         '{}-{:02d}-{:02d}'.format(*_date),
         '{:02d}:{:02d}:{:02d}'.format(*_time),
+        '{:02d}h {:02d}:{:02d}'.format(uptime_h, uptime_m, uptime_s),
     )
 
 async def api_ls(rq):
+    gc.collect()
     try:
         uos.chdir(rq.url.split('?chdir=')[1])
     except:
@@ -80,35 +75,27 @@ async def api_status(rq):
     await rq.write(H_OK)
     await rq.write("Content-Type: application/json\r\n\r\n")
     mem_free = gc.mem_free()
-    date_str, time_str = get_time()
+    date_str, time_str, uptime_str = get_time()
     await rq.write(json.dumps({
         "date": date_str,
         "time": time_str,
         "mem_free": mem_free,
         "currdir": uos.getcwd()
     }))
-
-async def api_lmp(rq):
+async def api_scale(rq):
+    sc711 = HX711(d_out=32, pd_sck=33)
     await rq.write(H_OK)
     await rq.write("Content-Type: application/json\r\n\r\n")
-    mem_free = gc.mem_free()
-    date_str, time_str = get_time()
+    hx711_raw=sc711.read()
+    hx711_g=hx711_raw*0.5
     await rq.write(json.dumps({
-        "ch1_time": Ch1Time,
-        "ch2_time": Ch2Time,
-        "temp":maxtemp
+        "hx711_raw": hx711_raw,
+        "hx711_g": hx711_g
     }))
-
-async def api_eval(rq):
+async def api_temps(rq):
     await rq.write(H_OK)
     await rq.write("Content-Type: application/json\r\n\r\n")
-    ev=rq.url.split('ev=')[1]
-    print(ev)
-    ev=urldecode(ev)
-    print(ev)
-    ev=eval(ev)
-    await rq.write(json.dumps(ev))
-    gc.collect()
+
 
 async def keep_connect():
     while True:
@@ -120,13 +107,12 @@ async def keep_connect():
                     print('Can not connected')
                 else:
                     print("Connected")
+                    print(sta.ifconfig())
             else:
                 print(sta.ifconfig())
                 try:
-                    #TODO From where time?
                     ntptime.NTP_DELTA = ntptime.NTP_DELTA - hl_timezone * 3600
                     ntptime.settime()
-                    print('Time set ok')
                 except:
                     print('Time set errors')
                 else:
@@ -182,11 +168,10 @@ async def index(rq):
         print('/%s.html' % (_DIR+i))
         await send_file(rq, '/%s.html' % (_DIR+i), )
 
-async def lmp(rq):
+async def sys_info(rq):
     await rq.write(H_OK + '\r\n')
-    for i in ['header', 'lmp', 'footer']:
-        print('/%s.html' % (_DIR + i))
-        await send_file(rq, '/%s.html' % (_DIR + i), )
+    for i in ['header','sys_info','footer']:
+        await send_file(rq, '/%s.html' % (_DIR+i), )
 
 
 async def assets(rq):
@@ -205,6 +190,11 @@ async def assets(rq):
 async def files(rq):
     await rq.write(H_OK + '\r\n')
     for i in ['header','files','footer']:
+        await send_file(rq, '/%s.html' % (_DIR+i), )
+
+async def scale(rq):
+    await rq.write(H_OK + '\r\n')
+    for i in ['header','scale','footer']:
         await send_file(rq, '/%s.html' % (_DIR+i), )
 
 
@@ -262,7 +252,7 @@ async def owscan(rq):
     await asyncio.sleep_ms(ds18_delay)
     print(fROMS)
     for i in fROMS:
-        body = body + '<li>' + '<a id="'+str(b2h(i))+'" href="/ow' + '?r=' + str(b2h(i)) + '">' + str(b2h(i)) + ' </a>' + '</li>'
+        body = body + '<li>' + '<a id="'+str(b2h(i,':'))+'" href="/ow' + '?r=' + str(b2h(i,':')) + '">' + str(b2h(i,':')) + ' </a>' + '</li>'
     body = body + '<ul>'
     await rq.write(body)
     await send_file(rq,'/%s/footer.html' % _DIR, )
@@ -291,8 +281,6 @@ async def ow_one(rq):
         await send_file(rq,'/%s/footer.html' % _DIR, )
 
 
-
-
 async def ow18_api(rq):
     rom = rq.url.split('=')[1][4:20]
     await rq.write(H_OK)
@@ -302,20 +290,24 @@ async def ow18_api(rq):
     temp = ds18.read_temp(bytearray(h2b(rom)))
     await rq.write(json.dumps({"temp": temp}))
 
+async def reset(rq):
+    machine.reset()
+
 naw.routes = {
     '/': index,
-    '/lamp':lmp,
+    '/sys_info': sys_info,
     '/assets/*': assets,
     '/ow*': ow_one,
     '/api/status': api_status,
     '/api/upload/*': upload,
+    '/api/reset': reset,
     '/api/ls*': api_ls,
-    '/api/eval*': api_eval,
+    '/api/scale': api_scale,
+    '/scale': scale,
     '/api/download/*': api_download,
-    '/api/ow18_api*': ow18_api,
-    '/api/lmp': api_lmp,
     '/files': files,
-    '/owscan': owscan
+    '/owscan': owscan,
+    '/api/ow18_api*': ow18_api
 }
 
 loop = asyncio.get_event_loop()
