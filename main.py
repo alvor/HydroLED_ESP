@@ -7,6 +7,7 @@ from ubinascii import unhexlify as h2b
 import json
 import time
 import sys
+import scheduler
 from nanoweb import Nanoweb, send_file
 from hx711 import HX711
 
@@ -314,4 +315,5 @@ loop = asyncio.get_event_loop()
 loop.create_task(keep_connect())
 loop.create_task(system_loop())
 loop.create_task(naw.run())
+loop.create_task(scheduler.proc())  
 loop.run_forever()
