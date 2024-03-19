@@ -6,46 +6,44 @@ from machine import Pin
 
 led = Pin(4, Pin.OUT)
 
-async def proc__old2():
-  cou =1
-  #del sys.modules['']
-  while True:
-
-    print('scheduler: ', )
-    await asyncio.sleep(100)
-
-
 async def proc():
-  cou =1
   #del sys.modules['']
+  cou =1
+  _time = None
+
   while True:
+    if _time == time.localtime()[3:5]:
+      continue
+    _time = time.localtime()[3:5]
+
+    _day_w = time.localtime()[7]
+    _time2 = '{:01d}:{:02d}'.format(*_time)
+
+    #print('scheduler: ', _time2, _day_w, cou)
 
     todo_list = json.loads(open('sched_list.json').read()).get('todo_list')
 
     #led.value(not led.value())
     #for todo in todo_list:
       #await asyncio.sleep(100)
-    _time = time.localtime()[3:5]
-    _day_w = time.localtime()[7]
-    _time2 = '{:01d}:{:02d}'.format(*_time)
-
-    #print('scheduler: ', _time2, _day_w, cou)
 
     for todo in todo_list:
-      print('scheduler: ', _time2 , _day_w)
+      #print('scheduler: ', _time2 , _day_w)
       if todo['time'] == _time2 and (todo.get('day_w') == _day_w or not todo.get('day_w')):
-        check_time(0)
-      else:
-        check_time(1)
+        print('scheduler: ', _time2 , _day_w)
+        check_time(todo['cmd'])
+      #else:
+        #check_time(todo['on'])
       await asyncio.sleep(1)
 
-    await asyncio.sleep(3)
+    await asyncio.sleep(20)
 
 
-def check_time(vv = 1):
+def check_time(cmd = 1):
 
   #while True:
 
     #led.value(not led.value())
-    led.value(vv)
+    print('scheduler todo: ', "on" if cmd else "off")
+    led.value(cmd)
 
