@@ -6,15 +6,6 @@ from machine import Pin
 
 led = Pin(4, Pin.OUT)
 
-async def proc__old2():
-  cou =1
-  #del sys.modules['']
-  while True:
-
-    print('scheduler: ', )
-    await asyncio.sleep(100)
-
-
 async def proc():
   cou =1
   #del sys.modules['']
