@@ -22,6 +22,7 @@ async def proc():
     #print('scheduler: ', _time2, _day_w, cou)
 
     todo_list = json.loads(open('sched_list.json').read()).get('todo_list')
+    #todo вынести за цикл в начало
 
     #led.value(not led.value())
     #for todo in todo_list:
