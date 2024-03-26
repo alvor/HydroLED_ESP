@@ -9,6 +9,7 @@
             <select multiple size="10"></select>
             <br>
             <input type="submit" name="bt_dw" value="Download">
+            <button type="button" name="bt_sh" class="bt_sh" value="View">View</button>
         </form>
 
         <h3>2. Upload</h3>
@@ -23,3 +24,13 @@
             <input type="submit" value="Upload">
             <input type="button" name="reset" value="Reset" onclick='$.getJSON("/api/eval&ev=machine.reset()")'>
         </form>
+
+        <script>
+            function show_content(){
+                let file = document.querySelector('#list select').value
+                location.href = '/show_content?file_name='+file
+            }
+
+            document.querySelector('#list .bt_sh').onclick= show_content
+        </script>
+ 
