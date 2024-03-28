@@ -155,7 +155,7 @@ async def system_loop():
         except:
             print('DS18b20 Error')
         gc.collect()
-        await asyncio.sleep(5)
+        await asyncio.sleep(12)
 
 def schedule():
     lt=time.localtime()[3:5]
@@ -192,6 +192,29 @@ async def files(rq):
     await rq.write(H_OK + '\r\n')
     for i in ['header','files','footer']:
         await send_file(rq, '/%s.html' % (_DIR+i), )
+
+async def show_content(rq):
+    await rq.write(H_OK + '\r\n')
+    await send_file(rq, _DIR+'header.html' )
+    #await send_file(rq, _DIR+'show_content.html' )
+
+    file_name = rq.url.split('?file_name=')[1]
+    html_body =open(_DIR+'show_content.html').read()
+    content =open(file_name).read()
+    #print("file_name: ", content)
+    #html_body = html_body.format(content=content)
+    html_body = html_body.replace("{{content}}",content)
+    #print("file_name: ", html_body)
+    # dd = f""" <script>  let tt = document.querySelector("textarea");
+    #    tt.value=new String(`{content}`).toString()
+    # </script>"""
+    await rq.write(html_body)
+
+    await send_file(rq, _DIR+'footer.html' )
+    
+    #for i in ['header','show_content','footer']:
+        #await send_file(rq, '/%s.html' % (_DIR+i), )
+
 
 async def scale(rq):
     await rq.write(H_OK + '\r\n')
@@ -307,6 +330,7 @@ naw.routes = {
     '/scale': scale,
     '/api/download/*': api_download,
     '/files': files,
+    '/show_content*': show_content,
     '/owscan': owscan,
     '/api/ow18_api*': ow18_api
 }

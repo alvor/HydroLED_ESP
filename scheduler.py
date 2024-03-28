@@ -9,6 +9,7 @@ async def proc():
   todo_list = json.loads(open('sched_list.json').read()).get('todo_list')
 
   while True:
+    #try:
     if _time == time.localtime()[3:5]:
       await asyncio.sleep(20)
       continue
@@ -20,11 +21,15 @@ async def proc():
       #print('scheduler: ', _time2 , _day_w, todo)
       if todo['time'] == _time2 and ( not todo.get('day_w') or _day_w in todo.get('day_w')):
         print('scheduler: ', _time2 , _day_w)
-        event_function(todo['cmd'])
+          event_function(todo)
       await asyncio.sleep(1)
 
-def event_function(cmd = 1):
-    print('scheduler todo: ', "on" if cmd else "off")
+    #except Exception as e:
+      #print(e, " in " todo_list)
+
+def event_function(todo ):
+    print('scheduler todo: ', "on" if todo['cmd'] else "off")
+    eval(todo["expr"])
     if todo_function:
-      todo_function(cmd)
+      todo_function(todo)
 
