@@ -4,9 +4,39 @@
     List is updated when you upload a file.
 </p>
 
-<form id="content_form" action="file_content" method="post">
-    <p><textarea  multiple name="content" rows="30" cols="140"></textarea></p>
+
+<form id="content_form" action="/api/upload/"  method="post">
+    <textarea id="f_content" multiple name="content" rows="12" cols="140"
+      style="min-height: 200px;"
+    >{{content}}</textarea>
     <br>
-    <!--button type="submit" name="bt_sh" class="bt_sh" value="View">View</button-->
+    <button type="button" onclick="download_content()" name="bt_sh" class="bt_sh bt_sh btn btn-primary _w-100 my-2 py-1" value="View">Update</button>
 </form>
+
+<script>
+  function download_content(e){
+    const form_data = new FormData()
+    el = document.querySelector("#f_content")
+    let params = new URLSearchParams(document.location.search)
+    let file_name = params.get("file_name")
+    const dd = el.value
+    let bb = new Blob([dd], {
+      type: 'text/plain'
+    });
+    form_data.append("files", bb )
+    const xhr = new XMLHttpRequest()
+    xhr.open("PUT", "/api/upload/"+file_name, true)
+    //xhr.setRequestHeader("Content-Type", "text/plain");
+    xhr.addEventListener("load", ()=>{
+      //window.location.href = "/files"
+      window.history.back()
+    });
+    xhr.addEventListener("error", ()=>{
+      alert("Upload Error!")
+    });
+    xhr.send(dd)
+  }
+</script>
+
+
 

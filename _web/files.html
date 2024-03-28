@@ -5,11 +5,13 @@
         </p>
 
         <form id="list">
-            <p>Dir: <span id="currdir">{currdir}</span></p> <input type="button" name="bt_cd" value="ChDir" onclick="change_dir();">
+            <p>Dir: <span id="currdir">{currdir}</span></p>
+            <button type="button" name="bt_cd" class="btn btn-outline-secondary _w-100 my-1 py-1" value="ChDir" onclick="change_dir();">ChDir</button>
+
             <select multiple size="10"></select>
             <br>
-            <input type="submit" name="bt_dw" value="Download">
-            <button type="button" name="bt_sh" class="bt_sh" value="View">View</button>
+            <button type="submit" name="bt_dw" class="btn btn-outline-secondary _w-100 my-1 py-1" value="Download">Download</button>
+            <button type="button" name="bt_sh" class="bt_sh btn btn-outline-secondary _w-100 my-1 py-1" value="View">View</button>
         </form>
 
         <h3>2. Upload</h3>
@@ -21,8 +23,14 @@
         <form id="upload" action="/api/upload/" method="POST">
             <label for="files">Files to upload:</label>
             <input id="files" name="files" type="file" multiple>
-            <input type="submit" value="Upload">
-            <input type="button" name="reset" value="Reset" onclick='$.getJSON("/api/eval&ev=machine.reset()")'>
+            <button type="submit" class="btn btn-outline-secondary _w-100 my-1 py-1" value="Upload">Upload</button>
+            
+            <button type="button" name="reset" class="btn btn-warning _w-100 my-1 py-1" value="Reset"
+              onclick='$.getJSON("/api/eval&ev=machine.reset()")'
+            >Reset</button>
+            <button type="button" name="reset" class="btn btn-warning _w-100 my-1 py-1" value="Reset"
+              onclick='$.getJSON("/api/reset")'
+            >Reset</button>
         </form>
 
         <script>
