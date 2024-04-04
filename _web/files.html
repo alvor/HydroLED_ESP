@@ -22,12 +22,12 @@
 
         <form id="upload" action="/api/upload/" method="POST">
             <label for="files">Files to upload:</label>
-            <input id="files" name="files" type="file" multiple>
+            <input id="files" class="form-control" name="files" type="file" multiple>
             <button type="submit" class="btn btn-outline-secondary _w-100 my-1 py-1" value="Upload">Upload</button>
             
-            <button type="button" name="reset" class="btn btn-warning _w-100 my-1 py-1" value="Reset"
+            <!--button type="button" name="reset" class="btn btn-warning _w-100 my-1 py-1" value="Reset"
               onclick='$.getJSON("/api/eval&ev=machine.reset()")'
-            >Reset</button>
+            >Reset</button-->
             <button type="button" name="reset" class="btn btn-warning _w-100 my-1 py-1" value="Reset"
               onclick='$.getJSON("/api/reset")'
             >Reset</button>
