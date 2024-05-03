@@ -1,5 +1,5 @@
 {"todo_list":[
-  {"time":"0:01","day_w":[1,2,3], "cmd":1,"expr":"print_ex('ok11')"},
-  {"time":"0:03","day_w":[2,3,4], "cmd":1,"expr":"print_ex('ok33')"},
-  {"time":"0:04", "cmd":0,"expr":"print_ex('ok44')"}
+  {"time":"0:01","day_w":[1,2,3], "cmd":1,"expr":"print('ok11')"},
+  {"time":"0:02","day_w":[2,3,4], "cmd":1,"expr":"print('ok33')"},
+  {"time":"0:04", "cmd":0,"expr":"print('ok44')"}
 ]}

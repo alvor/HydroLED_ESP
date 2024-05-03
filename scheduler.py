@@ -1,6 +1,7 @@
 import uasyncio as asyncio
 import json
 import time
+from hl import hl
 
 todo_function = None # callback function if need
 
@@ -21,7 +22,7 @@ async def proc():
       #print('scheduler: ', _time2 , _day_w, todo)
       if todo['time'] == _time2 and ( not todo.get('day_w') or _day_w in todo.get('day_w')):
         print('scheduler: ', _time2 , _day_w)
-          event_function(todo)
+        event_function(todo)
       await asyncio.sleep(1)
 
     #except Exception as e:
@@ -29,7 +30,7 @@ async def proc():
 
 def event_function(todo ):
     print('scheduler todo: ', "on" if todo['cmd'] else "off")
-    eval(todo["expr"])
+    eval("hl."+todo["expr"])
     if todo_function:
       todo_function(todo)
 
