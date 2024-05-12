@@ -12,7 +12,7 @@ import uasyncio as asyncio
 class PumpConfig:
     work_sec = 110
     period_min = 4
-    pin = Pin(4, Pin.OUT)
+    pin = Pin(12, Pin.OUT)
 
 
 #hl connect
@@ -42,7 +42,7 @@ class Hlc:
         pass
 
 
-class Pump(Hlc, PumpConfig ):
+class Pump(Hlc, PumpConfig):
     #pins = []
     state = 0
     #work_min = 2
@@ -73,12 +73,13 @@ class Pump(Hlc, PumpConfig ):
 
     def status(self):
         #print('status off: ', self.pins[pin_number-1].value())
-        return self.status #self.pins[pin_number-1].value()
+        return self.state #self.pins[pin_number-1].value()
 
     async def run(self):
       #ticks = time.ticks_ms()
       #state = self.state
       while True:
+        print("status: ", self.status())
         state = int(time.ticks_ms() /1000) % (self.period_min*60) < self.work_sec
 
         #if self.status and int(time.ticks_ms() /1000) % (self.work_sec+self.sleep_min*60) == 0:
@@ -115,8 +116,8 @@ class Hl:
 
 
 hl = Hl()
-#loop = asyncio.get_event_loop()
-##loop.create_task(hl.pump.run())
+loop = asyncio.get_event_loop()
+loop.create_task(hl.pump.run())
 #loop.run_forever()
 
 
